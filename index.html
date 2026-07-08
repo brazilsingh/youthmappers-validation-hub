@@ -475,6 +475,8 @@ header.top{
           <option value="almost">Almost completed</option>
           <option value="done">Fully validated</option>
           <option value="active">Active</option>
+          <option value="archived">Archived</option>
+          <option value="live">Live only (hide archived)</option>
         </select>
       </div>
       <div class="field">
@@ -637,11 +639,12 @@ async function getJSON(url){
   return res.json();
 }
 
-async function fetchPages(orgParam){
+async function fetchPages(orgParam, statuses){
   const out = [];
   let page = 1, pages = 1;
   do {
-    const data = await getJSON(`${CONFIG.apiBase}/projects/?${orgParam}&page=${page}&omitMapResults=true`);
+    const st = statuses ? `&projectStatuses=${statuses}` : "";
+    const data = await getJSON(`${CONFIG.apiBase}/projects/?${orgParam}${st}&page=${page}&omitMapResults=true`);
     (data.results || []).forEach(r => out.push(normalize(r)));
     pages = data.pagination?.pages ?? 1;
     page++;
@@ -659,16 +662,22 @@ async function resolveOrgId(){
 
 async function fetchAll(){
   setSync("syncing…");
-  // Attempt 1: filter by organisation name
-  try {
-    const byName = await fetchPages(`organisationName=${encodeURIComponent(CONFIG.organisationName)}`);
-    if (byName.length) return byName;
-  } catch(e){
-    console.warn("organisationName query failed, falling back to organisationId:", e.message);
+  const nameParam = `organisationName=${encodeURIComponent(CONFIG.organisationName)}`;
+  // Attempt order: name+archived → name only → orgId+archived → orgId only
+  const attempts = [
+    () => fetchPages(nameParam, "PUBLISHED,ARCHIVED"),
+    () => fetchPages(nameParam, null),
+  ];
+  let lastErr = null;
+  for (const run of attempts){
+    try { const r = await run(); if (r.length) return r; }
+    catch(e){ lastErr = e; console.warn("Query attempt failed:", e.message); }
   }
-  // Attempt 2: resolve the numeric organisation ID, then filter by it
   const orgId = await resolveOrgId();
-  return fetchPages(`organisationId=${orgId}`);
+  try { const r = await fetchPages(`organisationId=${orgId}`, "PUBLISHED,ARCHIVED"); if (r.length) return r; } catch(e){ lastErr = e; }
+  const final = await fetchPages(`organisationId=${orgId}`, null);
+  if (!final.length && lastErr) throw lastErr;
+  return final;
 }
 
 function normalize(r){
@@ -680,6 +689,7 @@ function normalize(r){
     diff: (r.difficulty || "").toUpperCase(),
     priority: (r.priority || "").toUpperCase(),
     country: Array.isArray(r.country) ? (r.country[0] || "") : (r.country || ""),
+    archived: (r.status || "").toUpperCase() === "ARCHIVED",
     map, val,
     gap: Math.max(0, map - val),
     contributors: r.totalContributors ?? null,
@@ -701,7 +711,9 @@ function applyFilters(){
     if (v === "lt25"   && !(p.val < 25)) return false;
     if (v === "25to75" && !(p.val >= 25 && p.val <= 75)) return false;
     if (v === "gt75"   && !(p.val > 75)) return false;
-    if (s && statusOf(p) !== s) return false;
+    if (s === "archived" && !p.archived) return false;
+    if (s === "live" && p.archived) return false;
+    if (s && s !== "archived" && s !== "live" && statusOf(p) !== s) return false;
     return true;
   });
 
@@ -726,7 +738,7 @@ function renderChips(f, n){
   if (f.d) add("Difficulty", DIFF_LABEL[f.d] || f.d, "fDiff");
   if (f.c) add("Country", f.c, "fCountry");
   if (f.v) add("Validation", {lt25:"< 25%","25to75":"25–75%",gt75:"> 75%"}[f.v], "fVal");
-  if (f.s) add("Status", STATUS_LABEL[f.s], "fStatus");
+  if (f.s) add("Status", STATUS_LABEL[f.s] || {archived:"Archived", live:"Live only"}[f.s], "fStatus");
   $("#chips").innerHTML = chips.join("") || `<span style="color:var(--muted);font-size:12.5px">No filters active — showing every tracked project.</span>`;
   $("#countNote").innerHTML = `<strong>${n}</strong> / ${projects.length} projects`;
   document.querySelectorAll("[data-clear]").forEach(b => b.onclick = () => { $("#"+b.dataset.clear).value = ""; applyFilters(); });
@@ -762,6 +774,7 @@ function renderBoard(list){
         </div>
         <div class="badges">
           <span class="badge ${STATUS_CLASS[st]}">${STATUS_LABEL[st]}</span>
+          ${p.archived ? `<span class="badge b-status-active" style="opacity:.75">Archived</span>` : ""}
           ${p.diff ? `<span class="badge ${DIFF_CLASS[p.diff]||"b-status-active"}">${DIFF_LABEL[p.diff]||p.diff}</span>` : ""}
           ${(p.priority==="URGENT"||p.priority==="HIGH") ? `<span class="badge b-prio">${p.priority} priority</span>` : ""}
         </div>
