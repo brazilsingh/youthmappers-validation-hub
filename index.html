@@ -627,20 +627,48 @@ const DIFF_LABEL = {EASY:"Easy", MODERATE:"Medium", CHALLENGING:"Hard"};
 const DIFF_CLASS = {EASY:"b-diff-easy", MODERATE:"b-diff-med", CHALLENGING:"b-diff-hard"};
 
 /* ================= FETCH ================= */
-async function fetchAll(){
-  setSync("syncing…", false);
+async function getJSON(url){
+  const res = await fetch(url);
+  if (!res.ok){
+    let detail = "";
+    try { detail = (await res.json()).Error || ""; } catch(_){}
+    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""} (${url.split("?")[0]})`);
+  }
+  return res.json();
+}
+
+async function fetchPages(orgParam){
   const out = [];
   let page = 1, pages = 1;
   do {
-    const url = `${CONFIG.apiBase}/projects/?organisationName=${encodeURIComponent(CONFIG.organisationName)}&page=${page}&omitMapResults=true`;
-    const res = await fetch(url, {headers:{"Accept-Language":"en"}});
-    if (!res.ok) throw new Error(`API responded ${res.status}`);
-    const data = await res.json();
+    const data = await getJSON(`${CONFIG.apiBase}/projects/?${orgParam}&page=${page}&omitMapResults=true`);
     (data.results || []).forEach(r => out.push(normalize(r)));
     pages = data.pagination?.pages ?? 1;
     page++;
   } while (page <= pages && page <= CONFIG.maxPages);
   return out;
+}
+
+async function resolveOrgId(){
+  const data = await getJSON(`${CONFIG.apiBase}/organisations/?omitManagerList=true`);
+  const list = data.organisations || data.results || [];
+  const hit = list.find(o => (o.name || "").toLowerCase().includes("youthmappers"));
+  if (!hit) throw new Error("YouthMappers organisation not found in the API's organisations list");
+  return hit.organisationId ?? hit.id;
+}
+
+async function fetchAll(){
+  setSync("syncing…");
+  // Attempt 1: filter by organisation name
+  try {
+    const byName = await fetchPages(`organisationName=${encodeURIComponent(CONFIG.organisationName)}`);
+    if (byName.length) return byName;
+  } catch(e){
+    console.warn("organisationName query failed, falling back to organisationId:", e.message);
+  }
+  // Attempt 2: resolve the numeric organisation ID, then filter by it
+  const orgId = await resolveOrgId();
+  return fetchPages(`organisationId=${orgId}`);
 }
 
 function normalize(r){
@@ -800,7 +828,7 @@ function renderStats(){
 }
 function setSync(text, ok){
   $("#syncText").textContent = text;
-  $("#syncDot").classList.toggle("err", ok === false && text.includes("fail"));
+  $("#syncDot").classList.toggle("err", ok === false);
 }
 function toast(msg){
   const t = $("#toast"); t.textContent = msg; t.style.display = "block";
@@ -824,11 +852,16 @@ async function refresh(){
     });
     setSync("synced " + lastSync.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"}), true);
   }catch(e){
-    console.error(e);
+    console.error("Validation Hub sync error:", e);
     setSync("sync failed", false);
-    toast("Could not reach the Tasking Manager API. It may be briefly down — retrying on the next cycle.");
+    toast("Sync failed: " + e.message);
     if (!projects.length){
-      $("#board").innerHTML = `<div class="state" style="grid-column:1/-1"><h3>Live data unavailable</h3><p>The Tasking Manager API did not respond. Check your connection or try Refresh.</p></div>`;
+      $("#board").innerHTML = `<div class="state" style="grid-column:1/-1">
+        <h3>Live data unavailable</h3>
+        <p style="margin-bottom:10px">The Tasking Manager API request did not succeed.</p>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--need);word-break:break-word">${esc(e.message)}</p>
+        <p style="margin-top:14px"><button class="btn primary" onclick="refresh()">Try again</button></p>
+      </div>`;
     }
   }
 }
