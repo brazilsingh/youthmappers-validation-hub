@@ -3,7 +3,7 @@
    Edit this file to add/remove Tasking Manager instances.
    ========================================================= */
 const CONFIG = {
-  version: "1.2.0",
+  version: "1.3.0",
   organisationName: "YouthMappers",
   refreshMs: 5 * 60 * 1000,   // auto-refresh interval
   maxPages: 20,               // safety cap on pagination per instance
