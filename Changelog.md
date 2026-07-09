@@ -9,6 +9,15 @@ This project follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PA
 
 ---
 
+## [1.4.0] — 2026-07-10
+### Added
+- **Light / dark mode switcher** (🌙 / ☀️ in the header). Remembers the choice
+  per visitor, respects the OS colour-scheme preference on first visit, and
+  applies before paint to avoid any flash. The map switches to normal OSM tiles
+  in light mode and darkened tiles in dark mode.
+### Fixed
+- Added spacing between the project overview and the activity map.
+
 ## [1.3.0] — 2026-07-10
 ### Changed
 - **Activity map** simplified to **markers only** (heatmap removed) and moved to
