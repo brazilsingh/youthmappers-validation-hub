@@ -219,7 +219,9 @@ header.top{
 .map-note{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:9px}
 /* dark-theme the Leaflet chrome */
 .leaflet-container{background:#0b1424 !important;font-family:"IBM Plex Sans",sans-serif}
-.leaflet-tile{filter:brightness(.62) invert(1) contrast(.9) hue-rotate(185deg) saturate(.55)}
+/* Dark-theme the base map: filter the whole tile pane so it can't be overridden */
+.leaflet-tile-pane{filter:brightness(.6) invert(1) contrast(.92) hue-rotate(185deg) saturate(.5) !important}
+.leaflet-tile{filter:none !important}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--text);border:1px solid var(--line-strong)}
 .leaflet-popup-content{font-size:13px;line-height:1.5}
 .leaflet-popup-content b{font-family:"Space Grotesk",sans-serif}
