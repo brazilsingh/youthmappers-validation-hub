@@ -21,95 +21,39 @@ const STATUS_CLASS = {done:"b-status-done", need:"b-status-need", almost:"b-stat
 const DIFF_LABEL = {EASY:"Easy", MODERATE:"Medium", CHALLENGING:"Hard"};
 const DIFF_CLASS = {EASY:"b-diff-easy", MODERATE:"b-diff-med", CHALLENGING:"b-diff-hard"};
 
-/* ================= FETCH (multi-instance) ================= */
-async function getJSON(url){
-  const res = await fetch(url);
-  if (!res.ok){
-    let detail = "";
-    try { detail = (await res.json()).Error || ""; } catch(_){}
-    throw new Error(`HTTP ${res.status}${detail ? " — " + detail : ""} (${url.split("?")[0]})`);
-  }
-  return res.json();
-}
+/* ================= FETCH (multi-instance, CORS-proxy aware) =================
+   Mirrors the reference server's logic: one plain
+   ?organisationName=YouthMappers query per instance, trusting the API's
+   own org scoping (no org-ID resolver, no post-filtering). Because GitHub
+   Pages runs in the browser, we try the API directly first, then retry
+   through CORS proxies if the browser blocks the direct call. */
 
-async function fetchPages(base, orgParam, statuses){
-  const out = [];
-  let page = 1, pages = 1;
-  do {
-    const st = statuses ? `&projectStatuses=${statuses}` : "";
-    const data = await getJSON(`${base}/projects/?${orgParam}${st}&page=${page}&omitMapResults=true`);
-    (data.results || []).forEach(r => out.push(normalize(r)));
-    pages = data.pagination?.pages ?? 1;
-    page++;
-  } while (page <= pages && page <= CONFIG.maxPages);
-  return out;
-}
-
-async function resolveOrgId(base){
-  const data = await getJSON(`${base}/organisations/?omitManagerList=true`);
-  const list = data.organisations || data.results || [];
-  const want = CONFIG.organisationName.trim().toLowerCase();
-  // Exact match first; fall back to a slug match, never a loose substring.
-  const hit = list.find(o => (o.name || "").trim().toLowerCase() === want)
-           || list.find(o => (o.slug || "").toLowerCase() === want.replace(/\s+/g, "-"));
-  if (!hit) throw new Error("YouthMappers organisation not found on this instance");
-  return hit.organisationId ?? hit.id;
-}
-
-/* Try each API candidate of an instance. Within a candidate, try a
-   sequence of (orgParam, statuses) queries and return the FIRST that
-   yields projects. An endpoint counts as "reachable but empty" only if
-   at least one query completed without error and all returned zero. */
-async function fetchInstance(inst){
-  const nameParam = `organisationName=${encodeURIComponent(CONFIG.organisationName)}`;
-  const want = CONFIG.organisationName.trim().toLowerCase();
-  // Hard guarantee: only keep projects the API confirms are owned by the org.
-  // If the API omits organisationName on a project (some list endpoints do),
-  // we keep it ONLY when it came from an org-scoped query — tracked via _scoped.
-  const keepOwned = list => {
-    const kept = [], dropped = [];
-    list.forEach(p => {
-      if (!p.orgName || p.orgName.trim().toLowerCase() === want) kept.push(p);
-      else dropped.push(`#${p.id} ${p.name} (org: ${p.orgName})`);
-    });
-    if (dropped.length) console.info(`${inst.label}: filtered out ${dropped.length} non-YouthMappers project(s):`, dropped);
-    return kept;
-  };
-  const tag = list => keepOwned(list).map(p =>
-    ({...p, src: inst.key, srcLabel: inst.label, frontend: inst.frontend}));
-  let lastErr = new Error(`${inst.label}: no API endpoint responded`);
-
-  for (const base of inst.apiCandidates){
-    let reachable = false;
-
-    const plans = [
-      {param: nameParam, statuses: "PUBLISHED,ARCHIVED"},
-      {param: nameParam, statuses: "PUBLISHED"},
-      {param: nameParam, statuses: null}
-    ];
-
-    let orgId = null;
-    try { orgId = await resolveOrgId(base); reachable = true; } catch(e){ lastErr = e; }
-    if (orgId != null){
-      plans.push(
-        {param: `organisationId=${orgId}`, statuses: "PUBLISHED,ARCHIVED"},
-        {param: `organisationId=${orgId}`, statuses: "PUBLISHED"},
-        {param: `organisationId=${orgId}`, statuses: null}
-      );
+async function fetchJSONWithFallback(targetUrl, allowProxy){
+  const attempts = [ u => u ];  // direct first
+  if (allowProxy) attempts.push(...CONFIG.corsProxies);
+  let lastErr = new Error("no endpoint responded");
+  for (const build of attempts){
+    const url = build(targetUrl);
+    try {
+      // No custom headers → keeps the request "simple" (no CORS preflight)
+      const res = await fetch(url);
+      if (!res.ok){ lastErr = new Error(`HTTP ${res.status}`); continue; }
+      return await res.json();
+    } catch(e){
+      lastErr = e;  // typically a CORS/network TypeError → try next proxy
     }
-
-    for (const plan of plans){
-      try {
-        const raw = await fetchPages(base, plan.param, plan.statuses);
-        reachable = true;
-        const owned = tag(raw);
-        if (owned.length) return owned;
-      } catch(e){ lastErr = e; }
-    }
-
-    if (reachable) return [];
   }
   throw lastErr;
+}
+
+async function fetchInstance(inst){
+  const target = `${inst.api}/projects/?organisationName=${encodeURIComponent(CONFIG.organisationName)}`;
+  const data = await fetchJSONWithFallback(target, inst.allowProxy);
+  const results = Array.isArray(data.results) ? data.results : [];
+  return results.map(r => ({
+    ...normalize(r),
+    src: inst.key, srcLabel: inst.label, frontend: inst.frontend
+  }));
 }
 
 async function fetchAll(){
@@ -133,6 +77,7 @@ async function fetchAll(){
   }
   if (failed.length){
     const reason = settled.find(s => s.status === "rejected")?.reason?.message || "";
+    toast(`${failed.join(" & ")} unreachable — showing the rest. ${reason}`);
     toast(`${failed.join(" & ")} unreachable — showing the rest. ${reason}`);
   }
   return all;
