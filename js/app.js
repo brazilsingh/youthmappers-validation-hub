@@ -53,33 +53,45 @@ async function resolveOrgId(base){
   return hit.organisationId ?? hit.id;
 }
 
-/* Try each API candidate of an instance; within each, try
-   name+archived → name → orgId+archived → orgId. Returns []
-   only if a query genuinely succeeded with zero projects. */
+/* Try each API candidate of an instance. Within a candidate, try a
+   sequence of (orgParam, statuses) queries and return the FIRST that
+   yields projects. An endpoint counts as "reachable but empty" only if
+   at least one query completed without error and all returned zero. */
 async function fetchInstance(inst){
   const nameParam = `organisationName=${encodeURIComponent(CONFIG.organisationName)}`;
   const tag = list => list.map(p => ({...p, src: inst.key, srcLabel: inst.label, frontend: inst.frontend}));
   let lastErr = new Error(`${inst.label}: no API endpoint responded`);
+
   for (const base of inst.apiCandidates){
-    let succeeded = false;
-    for (const st of ["PUBLISHED,ARCHIVED", null]){
+    let reachable = false;
+
+    // Build the query plan: name-based first, then org-ID based.
+    const plans = [
+      {param: nameParam, statuses: "PUBLISHED,ARCHIVED"},
+      {param: nameParam, statuses: "PUBLISHED"},
+      {param: nameParam, statuses: null}
+    ];
+
+    // Add org-ID variants (resolved lazily, only if name queries yield nothing)
+    let orgId = null;
+    try { orgId = await resolveOrgId(base); reachable = true; } catch(e){ lastErr = e; }
+    if (orgId != null){
+      plans.push(
+        {param: `organisationId=${orgId}`, statuses: "PUBLISHED,ARCHIVED"},
+        {param: `organisationId=${orgId}`, statuses: "PUBLISHED"},
+        {param: `organisationId=${orgId}`, statuses: null}
+      );
+    }
+
+    for (const plan of plans){
       try {
-        const r = await fetchPages(base, nameParam, st);
-        succeeded = true;
+        const r = await fetchPages(base, plan.param, plan.statuses);
+        reachable = true;
         if (r.length) return tag(r);
       } catch(e){ lastErr = e; }
     }
-    try {
-      const orgId = await resolveOrgId(base);
-      for (const st of ["PUBLISHED,ARCHIVED", null]){
-        try {
-          const r = await fetchPages(base, `organisationId=${orgId}`, st);
-          succeeded = true;
-          if (r.length) return tag(r);
-        } catch(e){ lastErr = e; }
-      }
-    } catch(e){ if (!succeeded) lastErr = e; }
-    if (succeeded) return []; // instance is fine, just has no YouthMappers projects
+
+    if (reachable) return []; // endpoint answered, org genuinely has no projects here
   }
   throw lastErr;
 }
@@ -87,15 +99,26 @@ async function fetchInstance(inst){
 async function fetchAll(){
   setSync("syncing…");
   const settled = await Promise.allSettled(CONFIG.instances.map(fetchInstance));
-  const all = [], failed = [];
+  const all = [], failed = [], summary = [];
   settled.forEach((s, i) => {
-    if (s.status === "fulfilled") all.push(...s.value);
-    else { failed.push(CONFIG.instances[i].label); console.warn(CONFIG.instances[i].label, "failed:", s.reason?.message); }
+    const label = CONFIG.instances[i].label;
+    if (s.status === "fulfilled"){
+      all.push(...s.value);
+      summary.push(`${label}: ${s.value.length}`);
+    } else {
+      failed.push(label);
+      summary.push(`${label}: failed`);
+      console.warn(label, "failed:", s.reason?.message);
+    }
   });
+  window.__syncSummary = summary.join(" · ");
   if (!all.length){
-    throw new Error(settled.map((s,i) => `${CONFIG.instances[i].label}: ${s.reason?.message || "no projects"}`).join("  |  "));
+    throw new Error(settled.map((s,i) => `${CONFIG.instances[i].label}: ${s.reason?.message || "0 projects"}`).join("  |  "));
   }
-  if (failed.length) toast(`${failed.join(" & ")} instance unreachable right now — showing live data from the rest.`);
+  if (failed.length){
+    const reason = settled.find(s => s.status === "rejected")?.reason?.message || "";
+    toast(`${failed.join(" & ")} unreachable — showing the rest. ${reason}`);
+  }
   return all;
 }
 
@@ -292,7 +315,8 @@ async function refresh(){
     document.querySelectorAll(".rel[data-ts]").forEach(el=>{
       const ts = Number(el.dataset.ts); if (ts) el.classList.add(freshnessClass(new Date(ts)));
     });
-    setSync("synced " + lastSync.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"}), true);
+    const when = lastSync.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
+    setSync(`synced ${when}${window.__syncSummary ? " · " + window.__syncSummary : ""}`, true);
   }catch(e){
     console.error("Validation Hub sync error:", e);
     setSync("sync failed", false);
