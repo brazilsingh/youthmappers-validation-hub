@@ -199,6 +199,48 @@ header.top{
 .count-note{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);margin-left:auto}
 .count-note strong{color:var(--text)}
 
+/* ---------- Activity map + heatmap ---------- */
+.mapwrap{
+  background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:14px;box-shadow:var(--shadow);
+}
+.map-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.map-toggle{display:inline-flex;background:#0b1424;border:1px solid var(--line-strong);border-radius:10px;padding:3px}
+.mt-btn{
+  background:none;border:none;color:var(--muted);font-weight:600;font-size:13px;
+  padding:7px 16px;border-radius:8px;transition:background .15s,color .15s;
+}
+.mt-btn.active{background:var(--map);color:#08131f}
+#map{
+  height:420px;border-radius:11px;overflow:hidden;border:1px solid var(--line-strong);
+  background:#0b1424;z-index:1;
+}
+.map-note{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:9px}
+/* dark-theme the Leaflet chrome */
+.leaflet-container{background:#0b1424 !important;font-family:"IBM Plex Sans",sans-serif}
+.leaflet-tile{filter:brightness(.62) invert(1) contrast(.9) hue-rotate(185deg) saturate(.55)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--text);border:1px solid var(--line-strong)}
+.leaflet-popup-content{font-size:13px;line-height:1.5}
+.leaflet-popup-content b{font-family:"Space Grotesk",sans-serif}
+.leaflet-popup-content a{color:var(--map)}
+.leaflet-bar a{background:var(--panel);color:var(--text);border-color:var(--line)}
+.leaflet-bar a:hover{background:#14223a}
+.leaflet-control-attribution{background:rgba(11,20,36,.8) !important;color:var(--muted) !important}
+.leaflet-control-attribution a{color:var(--map) !important}
+.ym-marker{
+  width:14px;height:14px;border-radius:50%;border:2px solid #08131f;
+  box-shadow:0 0 0 2px currentColor, 0 0 10px currentColor;
+}
+
+/* per-card export button */
+.card-export{
+  background:rgba(233,240,248,.05);border:1px solid var(--line-strong);color:var(--muted);
+  border-radius:9px;padding:8px 6px;font-weight:600;font-size:12.5px;flex:none;width:44px;
+  transition:border-color .15s,color .15s,background .15s;
+}
+.card-export:hover{border-color:var(--map);color:var(--map);background:rgba(58,169,234,.08)}
+
 /* ---------- Grid & cards ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
 .card{
@@ -338,6 +380,24 @@ header.top{
   font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:21px;color:#08131f;
   background:linear-gradient(135deg,var(--val),var(--map));
 }
+.avatar-photo{
+  width:66px;height:66px;border-radius:16px;flex:none;overflow:hidden;position:relative;
+  border:2px solid var(--line-strong);background:linear-gradient(135deg,var(--val),var(--map));
+}
+.avatar-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar-photo .avatar-initials{display:none}
+.avatar-photo.avatar-fallback{display:grid;place-items:center}
+.avatar-photo.avatar-fallback .avatar-initials{
+  display:block;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:23px;color:#08131f;
+}
+.gh-cta{
+  display:inline-flex;align-items:center;gap:9px;margin-top:14px;text-decoration:none;
+  background:#161b22;border:1px solid var(--line-strong);color:var(--text);
+  border-radius:10px;padding:9px 16px;font-weight:600;font-size:13px;
+  transition:border-color .15s,background .15s,transform .1s;
+}
+.gh-cta:hover{border-color:var(--map);background:#1c2530;transform:translateY(-1px)}
+.gh-cta svg{flex:none}
 .builder .roles{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--val);letter-spacing:.6px;margin:3px 0 8px}
 .contact-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
 .contact-row a{
@@ -355,3 +415,11 @@ header.top{
   background:#2a1315;border:1px solid rgba(239,91,77,.6);color:#ffc4be;
   border-radius:10px;padding:11px 18px;font-size:13px;display:none;max-width:90vw;
 }
+/* language selector */
+#langSelect{cursor:pointer;font-size:13px;min-width:120px}
+#langSelect option{background:var(--panel);color:var(--text)}
+/* right-to-left languages (e.g. Arabic) */
+[dir="rtl"] .meta,[dir="rtl"] .stamp,[dir="rtl"] .card-actions,
+[dir="rtl"] .top-actions,[dir="rtl"] .map-head,[dir="rtl"] .contact-row{direction:rtl}
+[dir="rtl"] .pcts{flex-direction:row-reverse}
+[dir="rtl"] .stat::before{inset:0 0 0 auto;right:0;left:auto}
