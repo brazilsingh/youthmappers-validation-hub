@@ -352,7 +352,7 @@ function exportProjectsCSV(list, filename){
 }
 
 /* ================= ACTIVITY MAP + HEATMAP ================= */
-let mapObj = null, markerLayer = null, heatLayer = null, mapMode = "markers";
+let mapObj = null, markerLayer = null;
 const STATUS_COLOR = { need:"#f2a83b", almost:"#3aa9ea", done:"#8f7df0", active:"#9fb6d2" };
 
 function initMap(){
@@ -371,7 +371,6 @@ function renderMap(list){
   const pts = list.filter(p => typeof p.lat === "number" && typeof p.lng === "number");
   const note = $("#mapNote");
 
-  // markers
   markerLayer.clearLayers();
   const bounds = [];
   pts.forEach(p => {
@@ -388,33 +387,10 @@ function renderMap(list){
     bounds.push([p.lat, p.lng]);
   });
 
-  // heat
-  if (heatLayer){ mapObj.removeLayer(heatLayer); heatLayer = null; }
-  const heatData = pts.map(p => {
-    const weight = statusOf(p) === "need" ? 1 : statusOf(p) === "almost" ? 0.7 : 0.4;
-    return [p.lat, p.lng, weight];
-  });
-  if (typeof L.heatLayer === "function"){
-    heatLayer = L.heatLayer(heatData, { radius:28, blur:20, maxZoom:9,
-      gradient:{0.2:"#3ecf8e",0.4:"#3aa9ea",0.7:"#f2a83b",1:"#ef5b4d"} });
-  }
-
-  applyMapMode();
   if (bounds.length){ try { mapObj.fitBounds(bounds, { padding:[40,40], maxZoom:6 }); } catch(_){} }
   note.textContent = pts.length
-    ? `${pts.length} of ${list.length} projects have location data · toggle Markers / Heatmap above`
-    : "No location data available for the current filter.";
-}
-
-function applyMapMode(){
-  if (!mapObj) return;
-  if (mapMode === "markers"){
-    if (heatLayer && mapObj.hasLayer(heatLayer)) mapObj.removeLayer(heatLayer);
-    if (markerLayer && !mapObj.hasLayer(markerLayer)) markerLayer.addTo(mapObj);
-  } else {
-    if (markerLayer && mapObj.hasLayer(markerLayer)) mapObj.removeLayer(markerLayer);
-    if (heatLayer && !mapObj.hasLayer(heatLayer)) heatLayer.addTo(mapObj);
-  }
+    ? `${pts.length} ${t("map_note_have")} ${list.length}`
+    : t("map_note_none");
 }
 
 /* ================= STATS + SYNC ================= */
@@ -481,7 +457,7 @@ const TOUR = [
   {sel:'[data-tour="stats"]',   t:"Mission control", p:"A live pulse of every YouthMappers campaign: how many projects are tracked, how many are starving for validators, and how far validation has come overall."},
   {sel:'[data-tour="filters"]', t:"Slice the workload", p:"Filter by difficulty, country, validation completion band, or status. Active filters appear as removable chips with a live result count."},
   {sel:'[data-tour="board"]',   t:"Project tiles", p:"Each card mirrors a Tasking Manager grid — green tiles are validated, blue are mapped and waiting. Amber-ringed cards need validators most. Use the ⬇ button to export any project as CSV."},
-  {sel:'[data-tour="map"]',     t:"Activity map", p:"See where YouthMappers is mapping worldwide. Toggle between Markers (click any point for project details) and Heatmap (hot zones need validators most)."},
+  {sel:'[data-tour="map"]',     t:"Activity map", p:"See where YouthMappers is mapping worldwide. Markers are coloured by status — click any point for project details and a link to open it."},
   {sel:'[data-tour="sync"]',    t:"Always live", p:"Data streams straight from the HOT and TeachOSM Tasking Manager APIs and refreshes itself every five minutes. Timestamps on every card tick in real time."}
 ];
 let tourIdx = 0, tourEls = null;
@@ -536,14 +512,6 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&l
 });
 $("#refreshBtn").onclick = refresh;
 $("#tourBtn").onclick = startTour;
-
-/* Map mode toggle */
-$("#mtMarkers").onclick = () => {
-  mapMode = "markers"; $("#mtMarkers").classList.add("active"); $("#mtHeat").classList.remove("active"); applyMapMode();
-};
-$("#mtHeat").onclick = () => {
-  mapMode = "heat"; $("#mtHeat").classList.add("active"); $("#mtMarkers").classList.remove("active"); applyMapMode();
-};
 
 /* Export all filtered projects */
 $("#exportAllBtn").onclick = () => {
