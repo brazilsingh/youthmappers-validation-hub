@@ -537,6 +537,27 @@ document.addEventListener("click", e => {
   }
 });
 
+/* ================= THEME (light / dark) ================= */
+function applyTheme(theme){
+  const t = theme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", t);
+  safeStore2("ymhub_theme", t);
+  const btn = document.getElementById("themeBtn");
+  if (btn){
+    btn.textContent = t === "light" ? "☀️" : "🌙";
+    btn.title = t === "light" ? "Switch to dark mode" : "Switch to light mode";
+  }
+}
+function initTheme(){
+  const saved = safeStore2("ymhub_theme");
+  const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+  applyTheme(saved || (prefersLight ? "light" : "dark"));
+  const btn = document.getElementById("themeBtn");
+  if (btn) btn.onclick = () =>
+    applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light");
+}
+initTheme();
+
 /* version tag in footer */
 (() => { const v = document.getElementById("versionTag"); if (v && CONFIG.version) v.textContent = "v" + CONFIG.version; })();
 
