@@ -3,11 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouthMappers Validation Ops — Live Dashboard</title>
-<meta name="description" content="Live validation operations dashboard for YouthMappers projects on the HOT Tasking Manager. Real-time data, validator-need indicators, and filters.">
+
+<!-- ============ SEO ============ -->
+<title>YouthMappers Validation Hub — Live OpenStreetMap Validation Dashboard</title>
+<meta name="description" content="Live YouthMappers validation dashboard tracking OpenStreetMap mapping campaigns across the HOT and TeachOSM Tasking Managers. Real-time validation progress, validator-need indicators, activity map, and heatmap for YouthMappers projects worldwide.">
+<meta name="keywords" content="YouthMappers, OpenStreetMap, OSM, validation, HOT Tasking Manager, TeachOSM, humanitarian mapping, GIS, volunteer mapping, validation dashboard">
+<meta name="author" content="Brazil Singh — YouthMappers Regional Ambassador, OSMF Director">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://brazilsingh.github.io/youthmappers-validation-hub/">
+
+<!-- ============ Open Graph / social ============ -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="YouthMappers Validation Hub">
+<meta property="og:title" content="YouthMappers Validation Hub — Live OSM Validation Dashboard">
+<meta property="og:description" content="Real-time validation tracking for YouthMappers projects across HOT and TeachOSM Tasking Managers — with activity map, heatmap, and per-project data export.">
+<meta property="og:url" content="https://brazilsingh.github.io/youthmappers-validation-hub/">
+<meta property="og:image" content="https://cdn.hotosm.org/tasking-manager/uploads/1588944940395_ymSquare.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="YouthMappers Validation Hub">
+<meta name="twitter:description" content="Live OpenStreetMap validation dashboard for YouthMappers projects worldwide.">
+<meta name="twitter:image" content="https://cdn.hotosm.org/tasking-manager/uploads/1588944940395_ymSquare.png">
+
+<!-- ============ GEO — structured data for search engines & AI answers ============ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "YouthMappers Validation Hub",
+  "url": "https://brazilsingh.github.io/youthmappers-validation-hub/",
+  "applicationCategory": "GISApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "A live validation operations dashboard tracking YouthMappers OpenStreetMap mapping campaigns across the HOT and TeachOSM Tasking Managers. It shows real-time mapping and validation progress, highlights projects that need validators, and provides an activity map, heatmap, and per-project data export.",
+  "creator": {
+    "@type": "Person",
+    "name": "Brazil Singh",
+    "jobTitle": "YouthMappers Regional Ambassador; Director, OpenStreetMap Foundation",
+    "url": "https://www.linkedin.com/in/brazil-singh-rittik/",
+    "email": "bsrittik@gmail.com"
+  },
+  "about": {
+    "@type": "Organization",
+    "name": "YouthMappers",
+    "url": "https://www.youthmappers.org/",
+    "description": "A global network of university student chapters that map for development and humanitarian resilience using OpenStreetMap."
+  },
+  "keywords": "YouthMappers, OpenStreetMap, OSM validation, HOT Tasking Manager, TeachOSM, humanitarian mapping"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the YouthMappers Validation Hub?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The YouthMappers Validation Hub is a live dashboard that monitors YouthMappers OpenStreetMap mapping campaigns across the HOT and TeachOSM Tasking Managers, showing real-time validation progress and highlighting which projects need validators." }
+    },
+    {
+      "@type": "Question",
+      "name": "Which Tasking Managers does it track?",
+      "acceptedAnswer": { "@type": "Answer", "text": "It tracks YouthMappers projects on the Humanitarian OpenStreetMap Team (HOT) Tasking Manager and the TeachOSM Tasking Manager." }
+    },
+    {
+      "@type": "Question",
+      "name": "Who built the YouthMappers Validation Hub?",
+      "acceptedAnswer": { "@type": "Answer", "text": "It was built by Brazil Singh, a YouthMappers Regional Ambassador and a Director of the OpenStreetMap Foundation." }
+    }
+  ]
+}
+</script>
+
+<!-- ============ Favicon (YouthMappers mark) ============ -->
+<link rel="icon" type="image/png" href="https://cdn.hotosm.org/tasking-manager/uploads/1588944940395_ymSquare.png">
+<link rel="apple-touch-icon" href="https://cdn.hotosm.org/tasking-manager/uploads/1588944940395_ymSquare.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ============ Leaflet (activity map + heatmap) ============ -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -66,90 +146,107 @@
     <div class="brand">
       <div class="mark" aria-hidden="true"></div>
       <div>
-        <h1>YouthMappers <span>Validation Ops</span></h1>
-        <div class="sub">Live · HOT Tasking Manager API</div>
+        <h1><a href="https://www.youthmappers.org/validation-hub" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">YouthMappers <span>Validation Hub</span></a></h1>
+        <div class="sub" data-i18n="tagline">Live · HOT &amp; TeachOSM Tasking Manager APIs</div>
       </div>
     </div>
     <div class="top-actions">
       <div class="sync-pill" id="syncPill" data-tour="sync">
-        <span class="sync-dot" id="syncDot"></span><span id="syncText">connecting…</span>
+        <span class="sync-dot" id="syncDot"></span><span id="syncText" data-i18n="connecting">connecting…</span>
       </div>
-      <button class="btn" id="refreshBtn" title="Fetch fresh data now">↻ Refresh</button>
-      <button class="btn ghost" id="tourBtn">Take the tour</button>
-      <a class="btn ghost" href="#about" style="text-decoration:none">About</a>
+      <button class="btn" id="refreshBtn" title="Fetch fresh data now" data-i18n="refresh">↻ Refresh</button>
+      <button class="btn ghost" id="tourBtn" data-i18n="tour_btn">Take the tour</button>
+      <a class="btn ghost" href="#about" style="text-decoration:none" data-i18n="about_btn">About</a>
+      <select id="langSelect" class="btn ghost" aria-label="Language" style="padding-right:8px"></select>
     </div>
   </header>
 
   <section class="stats" id="stats" data-tour="stats">
-    <div class="stat" style="--sc:var(--map)"><div class="k">Tracked projects</div><div class="v" id="stTotal">—</div><div class="d" id="stTotalBreak">across HOT &amp; TeachOSM</div></div>
-    <div class="stat" style="--sc:var(--need)"><div class="k">Need validators</div><div class="v" id="stNeed">—</div><div class="d">mapping ≥95%, validation &lt;90%</div></div>
-    <div class="stat" style="--sc:var(--val)"><div class="k">Avg validation</div><div class="v" id="stAvgVal">—</div><div class="d">across all tracked projects</div></div>
-    <div class="stat" style="--sc:var(--done)"><div class="k">Fully validated</div><div class="v" id="stDone">—</div><div class="d">100% verified tiles</div></div>
+    <div class="stat" style="--sc:var(--map)"><div class="k" data-i18n="stat_tracked">Tracked projects</div><div class="v" id="stTotal">—</div><div class="d" id="stTotalBreak" data-i18n="stat_tracked_d">across HOT &amp; TeachOSM</div></div>
+    <div class="stat" style="--sc:var(--need)"><div class="k" data-i18n="stat_need">Need validators</div><div class="v" id="stNeed">—</div><div class="d" data-i18n="stat_need_d">mapping ≥95%, validation &lt;90%</div></div>
+    <div class="stat" style="--sc:var(--val)"><div class="k" data-i18n="stat_avg">Avg validation</div><div class="v" id="stAvgVal">—</div><div class="d" data-i18n="stat_avg_d">across all tracked projects</div></div>
+    <div class="stat" style="--sc:var(--done)"><div class="k" data-i18n="stat_done">Fully validated</div><div class="v" id="stDone">—</div><div class="d" data-i18n="stat_done_d">100% verified tiles</div></div>
   </section>
 
   <section class="deck" data-tour="filters">
     <div class="deck-row">
       <div class="field">
-        <label for="fSearch">Search</label>
-        <input id="fSearch" type="search" placeholder="Project name or #ID…">
+        <label for="fSearch" data-i18n="f_search">Search</label>
+        <input id="fSearch" type="search" placeholder="Project name or #ID…" data-i18n-ph="f_search_ph">
       </div>
       <div class="field">
-        <label for="fDiff">Difficulty</label>
+        <label for="fDiff" data-i18n="f_diff">Difficulty</label>
         <select id="fDiff">
           <option value="">All</option>
-          <option value="EASY">Easy</option>
-          <option value="MODERATE">Medium</option>
-          <option value="CHALLENGING">Hard</option>
+          <option value="EASY" data-i18n="diff_easy">Easy</option>
+          <option value="MODERATE" data-i18n="diff_med">Medium</option>
+          <option value="CHALLENGING" data-i18n="diff_hard">Hard</option>
         </select>
       </div>
       <div class="field">
-        <label for="fCountry">Country / region</label>
+        <label for="fCountry" data-i18n="f_country">Country / region</label>
         <select id="fCountry"><option value="">All</option></select>
       </div>
       <div class="field">
-        <label for="fVal">Validation %</label>
+        <label for="fVal" data-i18n="f_val">Validation %</label>
         <select id="fVal">
           <option value="">All</option>
-          <option value="lt25">&lt; 25%</option>
-          <option value="25to75">25% – 75%</option>
-          <option value="gt75">&gt; 75%</option>
+          <option value="lt25" data-i18n="val_lt25">&lt; 25%</option>
+          <option value="25to75" data-i18n="val_2575">25% – 75%</option>
+          <option value="gt75" data-i18n="val_gt75">&gt; 75%</option>
         </select>
       </div>
       <div class="field">
-        <label for="fStatus">Status</label>
+        <label for="fStatus" data-i18n="f_status">Status</label>
         <select id="fStatus">
           <option value="">All</option>
-          <option value="need">Needs validation</option>
-          <option value="almost">Almost completed</option>
-          <option value="done">Fully validated</option>
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
-          <option value="live">Live only (hide archived)</option>
+          <option value="need" data-i18n="st_need">Needs validation</option>
+          <option value="almost" data-i18n="st_almost">Almost completed</option>
+          <option value="done" data-i18n="st_done">Fully validated</option>
+          <option value="active" data-i18n="st_active">Active</option>
+          <option value="archived" data-i18n="st_archived">Archived</option>
+          <option value="live" data-i18n="st_live">Live only (hide archived)</option>
         </select>
       </div>
       <div class="field">
-        <label for="fSource">Source</label>
+        <label for="fSource" data-i18n="f_source">Source</label>
         <select id="fSource">
-          <option value="">All instances</option>
+          <option value="" data-i18n="all_instances">All instances</option>
           <option value="hot">HOT</option>
           <option value="teachosm">TeachOSM</option>
         </select>
       </div>
       <div class="field">
-        <label for="fSort">Sort by</label>
+        <label for="fSort" data-i18n="f_sort">Sort by</label>
         <select id="fSort">
-          <option value="need">Validator need</option>
-          <option value="updated">Recently updated</option>
-          <option value="valAsc">Validation % ↑</option>
-          <option value="valDesc">Validation % ↓</option>
-          <option value="idDesc">Newest project</option>
+          <option value="need" data-i18n="sort_need">Validator need</option>
+          <option value="updated" data-i18n="sort_updated">Recently updated</option>
+          <option value="valAsc" data-i18n="sort_valasc">Validation % ↑</option>
+          <option value="valDesc" data-i18n="sort_valdesc">Validation % ↓</option>
+          <option value="idDesc" data-i18n="sort_iddesc">Newest project</option>
         </select>
       </div>
     </div>
     <div class="chipbar">
       <span id="chips"></span>
+      <button class="btn ghost" id="exportAllBtn" title="Download all filtered projects as CSV" style="font-size:12.5px;padding:6px 12px" data-i18n="export_csv">⬇ Export CSV</button>
       <span class="count-note" id="countNote"></span>
     </div>
+  </section>
+
+  <section class="mapwrap" data-tour="map">
+    <div class="map-head">
+      <div>
+        <div class="eyebrow" style="margin-bottom:4px" data-i18n="map_eyebrow">Activity map</div>
+        <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(17px,2.4vw,22px)" data-i18n="map_title">Where YouthMappers is mapping</h2>
+      </div>
+      <div class="map-toggle" role="group" aria-label="Map display mode">
+        <button class="mt-btn active" id="mtMarkers" type="button" data-i18n="map_markers">Markers</button>
+        <button class="mt-btn" id="mtHeat" type="button" data-i18n="map_heat">Heatmap</button>
+      </div>
+    </div>
+    <div id="map" role="region" aria-label="Map of YouthMappers project locations"></div>
+    <div class="map-note" id="mapNote"></div>
   </section>
 
   <section id="board" class="grid" data-tour="board" aria-live="polite">
@@ -203,7 +300,12 @@
 
       <div class="bcard span6">
         <div class="builder">
-          <div class="avatar" aria-hidden="true">BS</div>
+          <div class="avatar-photo" aria-hidden="true">
+            <img src="https://wiki.openstreetmap.org/w/images/b/b3/Brazil_photo.jpeg?20260709200510"
+                 alt="Brazil Singh"
+                 onerror="this.parentElement.classList.add('avatar-fallback');this.remove();">
+            <span class="avatar-initials">BS</span>
+          </div>
           <div style="flex:1;min-width:240px">
             <h3 style="margin-bottom:0">Brazil Singh</h3>
             <div class="roles">YouthMappers Regional Ambassador · Director, OpenStreetMap Foundation</div>
@@ -213,6 +315,10 @@
               <a href="https://www.linkedin.com/in/brazil-singh-rittik/" target="_blank" rel="noopener">🔗 LinkedIn profile</a>
               <a href="https://www.youthmappers.org/" target="_blank" rel="noopener">🌐 YouthMappers network</a>
             </div>
+            <a class="gh-cta" href="https://github.com/brazilsingh/youthmappers-validation-hub" target="_blank" rel="noopener">
+              <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+              <span>Contribute on GitHub — star, fork &amp; open a PR</span>
+            </a>
           </div>
         </div>
       </div>
@@ -223,7 +329,7 @@
   <p class="footer">
     Data streamed live over HTTPS from the <a href="https://tasks.hotosm.org/organisations/youthmappers" target="_blank" rel="noopener">HOT</a> &amp; <a href="https://tasks.teachosm.org/organisations/youthmappers" target="_blank" rel="noopener">TeachOSM</a> Tasking Managers · read-only API · auto-refreshes every 5 minutes<br>
     Built by <a href="https://www.linkedin.com/in/brazil-singh-rittik/" target="_blank" rel="noopener"><b>Brazil Singh</b></a><span class="sep">|</span>YouthMappers Regional Ambassador<span class="sep">|</span>Director, OpenStreetMap Foundation<br>
-    <a href="mailto:bsrittik@gmail.com">📬 bsrittik@gmail.com</a><span class="sep">|</span><a href="https://www.linkedin.com/in/brazil-singh-rittik/" target="_blank" rel="noopener">in LinkedIn</a><span class="sep">|</span><a href="https://www.youthmappers.org/" target="_blank" rel="noopener">🌐 YouthMappers</a><span class="sep">|</span>© 2026 Validation Portal
+    <a href="mailto:bsrittik@gmail.com">📬 bsrittik@gmail.com</a><span class="sep">|</span><a href="https://www.linkedin.com/in/brazil-singh-rittik/" target="_blank" rel="noopener">in LinkedIn</a><span class="sep">|</span><a href="https://www.youthmappers.org/" target="_blank" rel="noopener">🌐 YouthMappers</a><span class="sep">|</span>© 2026 Validation Portal<span class="sep">|</span><a href="https://github.com/brazilsingh/youthmappers-validation-hub/releases" target="_blank" rel="noopener" id="versionTag">v—</a>
   </p>
 </div>
 
@@ -253,6 +359,7 @@
 
 <div class="toast" id="toast" role="alert"></div>
 
+<script src="js/i18n.js"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 </body>
