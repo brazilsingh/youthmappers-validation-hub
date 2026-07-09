@@ -86,7 +86,6 @@
 <!-- ============ Leaflet (activity map + heatmap) ============ -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
 <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -234,24 +233,20 @@
     </div>
   </section>
 
+  <section id="board" class="grid" data-tour="board" aria-live="polite">
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+  </section>
+
   <section class="mapwrap" data-tour="map">
     <div class="map-head">
       <div>
         <div class="eyebrow" style="margin-bottom:4px" data-i18n="map_eyebrow">Activity map</div>
         <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(17px,2.4vw,22px)" data-i18n="map_title">Where YouthMappers is mapping</h2>
       </div>
-      <div class="map-toggle" role="group" aria-label="Map display mode">
-        <button class="mt-btn active" id="mtMarkers" type="button" data-i18n="map_markers">Markers</button>
-        <button class="mt-btn" id="mtHeat" type="button" data-i18n="map_heat">Heatmap</button>
-      </div>
     </div>
     <div id="map" role="region" aria-label="Map of YouthMappers project locations"></div>
     <div class="map-note" id="mapNote"></div>
-  </section>
-
-  <section id="board" class="grid" data-tour="board" aria-live="polite">
-    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
-    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
   </section>
 
   <section class="about" id="about">
@@ -259,10 +254,65 @@
     <h2>About the YouthMappers Validation Hub</h2>
     <div class="bento">
 
+      <div class="bcard span6 hero-card">
+        <h3 style="font-size:20px;margin-bottom:6px"><span class="tag">YouthMappers Validation Hub</span>Building better maps — and better mappers — through quality data.</h3>
+      </div>
+
+      <div class="bcard span3">
+        <h3><span class="tag">The Why</span>What is validation, and why does it matter?</h3>
+        <p>Every feature mapped on OpenStreetMap — a building, a road, a health clinic — is only as useful as it is accurate. <b>Validation</b> is the quality-control step that makes sure mapped data is correct, complete, and tagged properly before it gets used by humanitarian responders, urban planners, and communities around the world.</p>
+        <p>When you validate, you're not just checking someone else's work. You're closing the loop on the entire mapping process — turning raw contributions into reliable data that people depend on.</p>
+      </div>
+
+      <div class="bcard span3">
+        <h3><span class="tag">Quality Checks</span>We look for three things</h3>
+        <p><b>1. Spatial accuracy</b> — Are features traced correctly? Are buildings squared? Are roads properly connected?</p>
+        <p><b>2. Tagging accuracy</b> — Are features labeled with the right OSM tags?</p>
+        <p><b>3. Completeness</b> — Are all required features mapped according to the project instructions?</p>
+      </div>
+
+      <div class="bcard span6">
+        <h3><span class="tag">A brief history</span>From George Washington University to a global team</h3>
+        <p>The YouthMappers Validation Hub was launched in <b>June 2019</b> by faculty and students at The George Washington University in Washington, D.C., with a clear purpose: to ensure that data produced by YouthMappers chapters met the highest standard of quality in OpenStreetMap.</p>
+        <p>The original hub developed training materials in English, French, and Spanish; hosted validation parties and training sessions; pioneered interactive validation workflows using JOSM and OSMCha; and validated dozens of HOT Tasking Manager projects across the YouthMappers network. That foundation — the tools, training materials, and workflows they built — continues to guide the program today.</p>
+        <p>YouthMappers' validation efforts are now supported by our <a href="https://www.youthmappers.org/regional-ambassadors" target="_blank" rel="noopener">Volunteer Regional Ambassador Validation Team</a> — experienced mappers around the world who lead JOSM and validation trainings, support data quality in their regions, and are available to help.</p>
+      </div>
+
+      <div class="bcard span6">
+        <h3><span class="tag">Learn to validate</span>Build your skills, step by step</h3>
+        <p>Whether you're new to OSM or an experienced mapper ready to level up, these resources walk you through everything you need to get started with validation. Work through them in order.</p>
+
+        <div class="learn-step">
+          <h4>Step 1 · Learn JOSM</h4>
+          <p>JOSM is the advanced editing software used by validators across the YouthMappers network. Start here before moving on to validation.</p>
+          <ul class="learn-links">
+            <li>🎓 <a href="https://mmann1123.github.io/YouthMappersAcademy/7-JOSM%201%20-%20Introduction%20to%20Mapping%20With%20JOSM.html" target="_blank" rel="noopener">Introduction to JOSM — YouthMappers Academy Course</a></li>
+            <li>▶ <a href="https://www.youtube.com/watch?v=e8RSvRJh66c" target="_blank" rel="noopener">Intro to JOSM Webinar — YouTube</a></li>
+            <li>▶ <a href="https://www.youtube.com/watch?v=PTPLx0oxoO8" target="_blank" rel="noopener">Advanced JOSM Webinar — YouTube</a></li>
+            <li>📄 YouthMappers JOSM Training Document — <a href="https://docs.google.com/document/d/1593nQlMwURY60SaOm3QFx-MWKEOF1WJ7ltbzr9WTHrM/edit?usp=sharing" target="_blank" rel="noopener">English</a>, <a href="https://docs.google.com/document/d/1E2Ii--BSfQ_J8N_vD0mDq1Du51fkc2af/edit?usp=sharing&ouid=106763442626353088427&rtpof=true&sd=true" target="_blank" rel="noopener">español</a>, <a href="https://drive.google.com/file/d/1N-2wZ797Z9eikL-h9rcen6kBdh9CYcSw/view?usp=drive_link" target="_blank" rel="noopener">français</a></li>
+            <li>📊 <a href="https://drive.google.com/file/d/1Q8Ogam5COn-sBWxPluulV820BZwNKcu4/view?usp=sharing" target="_blank" rel="noopener">Introduction to JOSM Training Slides</a></li>
+          </ul>
+        </div>
+
+        <div class="learn-step">
+          <h4>Step 2 · Learn to validate</h4>
+          <p>Once you're comfortable in JOSM, you're ready to start validating. These resources walk you through the full validation workflow.</p>
+          <ul class="learn-links">
+            <li>🎓 <a href="https://mmann1123.github.io/YouthMappersAcademy/8-JOSM%202%20-%20Advanced%20JOSM.html" target="_blank" rel="noopener">Advanced JOSM Techniques &amp; Validation — YouthMappers Academy Course</a></li>
+            <li>▶ <a href="https://www.youtube.com/watch?v=zPgutuLs-Ug" target="_blank" rel="noopener">Validation Training Webinar — YouTube</a></li>
+            <li>📄 YouthMappers Validation Training Document — <a href="https://docs.google.com/document/d/1t30Yibnxi6tt7jSHPSCHm-oQT36fsIcj/edit?usp=sharing&ouid=111669693243632737791&rtpof=true&sd=true" target="_blank" rel="noopener">English</a>, <a href="https://drive.google.com/file/d/1a01kcWqnzJrtsABuYlBBT3NN5XcasLRV/view" target="_blank" rel="noopener">español</a>, <a href="https://drive.google.com/file/d/1vYSfMAQGwyWMtP_BA567kckntBMkxGIt/view" target="_blank" rel="noopener">français</a></li>
+            <li>⚡ <a href="https://docs.google.com/document/d/134Il0CfdhrlwWDRWCD4oxZ3-pSqKJspETKxRcbTtBSQ/edit?usp=sharing" target="_blank" rel="noopener">Interactive / Active Validation Using OSMCha</a></li>
+            <li>⚡ Validation Messages — <a href="https://docs.google.com/document/d/1bhbK6MFzSvDk0Ngrfdmb-v49ZeCEg8UQ7xOniRZuvmw/edit?usp=sharing" target="_blank" rel="noopener">English</a>, <a href="https://docs.google.com/document/d/1yDuLgEXVR5fIG-kN4vbdjdc0WVVacjSMY5i1oWpM_GM/edit?usp=sharing" target="_blank" rel="noopener">français</a></li>
+          </ul>
+        </div>
+
+        <p style="margin-top:12px">Explore the full list on the <a href="https://sites.google.com/view/youthmapperswiki/chapter-resources/validation" target="_blank" rel="noopener">YouthMappers Resource Library</a>.</p>
+      </div>
+
       <div class="bcard span3">
         <h3><span class="tag">The Hub</span>A monitoring &amp; synchronization workspace</h3>
         <p>This validation hub is a custom, high-visibility monitoring and synchronization workspace designed and maintained by <b>Brazil Singh</b> (YouthMappers Regional Ambassador · Director of the OpenStreetMap Foundation).</p>
-        <p>It operates as a telemetry aggregator and validation coordination workspace, directly monitoring YouthMappers mapping campaigns on the global <b>Humanitarian OpenStreetMap Team (HOT)</b> Tasking Manager, with TeachOSM instance support on the roadmap. By polling live REST API endpoints, it tracks regional campaigns dedicated to disaster relief, infrastructure building, and localized sustainable development datasets — helping prevent duplication of effort and coordinate volunteer validation channels.</p>
+        <p>It operates as a telemetry aggregator and validation coordination workspace, directly monitoring YouthMappers mapping campaigns on the global <b>Humanitarian OpenStreetMap Team (HOT)</b> and <b>TeachOSM</b> Tasking Managers. By polling live REST API endpoints, it tracks regional campaigns dedicated to disaster relief, infrastructure building, and localized sustainable development datasets — helping prevent duplication of effort and coordinate volunteer validation channels.</p>
       </div>
 
       <div class="bcard span3">
