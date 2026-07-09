@@ -19,13 +19,11 @@ const CONFIG = {
       key: "teachosm",
       label: "TeachOSM",
       frontend: "https://tasks.teachosm.org",
-      // TeachOSM runs the OSM-US fork; the API host is probed at
-      // runtime — first candidate that answers is used. If you learn
-      // the exact API URL (site → F12 → Network tab), put it first.
+      // TeachOSM runs the OSM-US fork, whose API lives under /backend/
+      // (confirmed via status.openstreetmap.us heartbeat endpoint).
       apiCandidates: [
-        "https://tasks.teachosm.org/api/v2",
-        "https://tasking-manager-teachosm-api.hotosm.org/api/v2",
-        "https://teachosm-tm4-production-api.hotosm.org/api/v2"
+        "https://tasks.teachosm.org/backend/api/v2",
+        "https://tasks.openstreetmap.us/backend/api/v2"
       ]
     }
   ]
