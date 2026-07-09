@@ -48,7 +48,10 @@ async function fetchPages(base, orgParam, statuses){
 async function resolveOrgId(base){
   const data = await getJSON(`${base}/organisations/?omitManagerList=true`);
   const list = data.organisations || data.results || [];
-  const hit = list.find(o => (o.name || "").toLowerCase().includes("youthmappers"));
+  const want = CONFIG.organisationName.trim().toLowerCase();
+  // Exact match first; fall back to a slug match, never a loose substring.
+  const hit = list.find(o => (o.name || "").trim().toLowerCase() === want)
+           || list.find(o => (o.slug || "").toLowerCase() === want.replace(/\s+/g, "-"));
   if (!hit) throw new Error("YouthMappers organisation not found on this instance");
   return hit.organisationId ?? hit.id;
 }
@@ -59,20 +62,32 @@ async function resolveOrgId(base){
    at least one query completed without error and all returned zero. */
 async function fetchInstance(inst){
   const nameParam = `organisationName=${encodeURIComponent(CONFIG.organisationName)}`;
-  const tag = list => list.map(p => ({...p, src: inst.key, srcLabel: inst.label, frontend: inst.frontend}));
+  const want = CONFIG.organisationName.trim().toLowerCase();
+  // Hard guarantee: only keep projects the API confirms are owned by the org.
+  // If the API omits organisationName on a project (some list endpoints do),
+  // we keep it ONLY when it came from an org-scoped query — tracked via _scoped.
+  const keepOwned = list => {
+    const kept = [], dropped = [];
+    list.forEach(p => {
+      if (!p.orgName || p.orgName.trim().toLowerCase() === want) kept.push(p);
+      else dropped.push(`#${p.id} ${p.name} (org: ${p.orgName})`);
+    });
+    if (dropped.length) console.info(`${inst.label}: filtered out ${dropped.length} non-YouthMappers project(s):`, dropped);
+    return kept;
+  };
+  const tag = list => keepOwned(list).map(p =>
+    ({...p, src: inst.key, srcLabel: inst.label, frontend: inst.frontend}));
   let lastErr = new Error(`${inst.label}: no API endpoint responded`);
 
   for (const base of inst.apiCandidates){
     let reachable = false;
 
-    // Build the query plan: name-based first, then org-ID based.
     const plans = [
       {param: nameParam, statuses: "PUBLISHED,ARCHIVED"},
       {param: nameParam, statuses: "PUBLISHED"},
       {param: nameParam, statuses: null}
     ];
 
-    // Add org-ID variants (resolved lazily, only if name queries yield nothing)
     let orgId = null;
     try { orgId = await resolveOrgId(base); reachable = true; } catch(e){ lastErr = e; }
     if (orgId != null){
@@ -85,13 +100,14 @@ async function fetchInstance(inst){
 
     for (const plan of plans){
       try {
-        const r = await fetchPages(base, plan.param, plan.statuses);
+        const raw = await fetchPages(base, plan.param, plan.statuses);
         reachable = true;
-        if (r.length) return tag(r);
+        const owned = tag(raw);
+        if (owned.length) return owned;
       } catch(e){ lastErr = e; }
     }
 
-    if (reachable) return []; // endpoint answered, org genuinely has no projects here
+    if (reachable) return [];
   }
   throw lastErr;
 }
@@ -128,6 +144,8 @@ function normalize(r){
   return {
     id: r.projectId ?? r.id,
     name: r.name || `Project ${r.projectId}`,
+    orgName: r.organisationName || "",
+    author: r.author || "",
     diff: (r.difficulty || "").toUpperCase(),
     priority: (r.priority || "").toUpperCase(),
     country: Array.isArray(r.country) ? (r.country[0] || "") : (r.country || ""),
