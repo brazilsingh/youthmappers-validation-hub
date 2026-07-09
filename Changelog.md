@@ -9,6 +9,15 @@ This project follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PA
 
 ---
 
+## [1.3.0] — 2026-07-10
+### Changed
+- **Activity map** simplified to **markers only** (heatmap removed) and moved to
+  sit after the project overview, just before the About section.
+### Added
+- Full **validation programme content** in the About section: what validation is
+  and why it matters, the three quality checks, a brief history of the Hub, and a
+  step-by-step "Learn to validate" resource library (JOSM + validation training).
+
 ## [1.2.0] — 2026-07-10
 ### Added
 - **Localization (i18n)** with a header language switcher: English, Bengali,
