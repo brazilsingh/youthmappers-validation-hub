@@ -1,9 +1,56 @@
-/* Configuration lives in js/config.js */
+/* Configuration lives in config.js; translations in i18n.js */
 
 /* ================= STATE ================= */
 let projects = [];
 let lastSync = null;
 const $ = s => document.querySelector(s);
+
+/* ================= i18n ENGINE ================= */
+let LANG = "en";
+function t(key){
+  const dict = (typeof I18N !== "undefined" && I18N[LANG]) || (typeof I18N !== "undefined" && I18N.en) || {};
+  return dict[key] ?? ((typeof I18N !== "undefined" && I18N.en && I18N.en[key]) || key);
+}
+function safeStore2(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v);}catch(_){return null;} }
+
+function applyLanguage(lang){
+  if (typeof I18N === "undefined" || !I18N[lang]) lang = "en";
+  LANG = lang;
+  safeStore2("ymhub_lang", lang);
+  document.documentElement.lang = lang;
+  document.documentElement.dir = (typeof RTL_LANGS !== "undefined" && RTL_LANGS.includes(lang)) ? "rtl" : "ltr";
+  // text content
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const k = el.getAttribute("data-i18n");
+    const val = t(k);
+    if (val) el.textContent = val;
+  });
+  // placeholders
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    const val = t(el.getAttribute("data-i18n-ph"));
+    if (val) el.setAttribute("placeholder", val);
+  });
+  // "All" options that share the generic key
+  document.querySelectorAll('#fDiff option[value=""], #fCountry option[value=""], #fVal option[value=""], #fStatus option[value=""], #fSource option[value=""]').forEach(o => {
+    if (o.parentElement.id === "fSource") return; // has its own key
+    o.textContent = t("all");
+  });
+  // re-render dynamic content in the new language
+  if (projects.length){ renderStats(); applyFilters(); }
+}
+
+function initLangSelect(){
+  const sel = document.getElementById("langSelect");
+  if (!sel || typeof LANG_NAMES === "undefined") return;
+  sel.innerHTML = Object.entries(LANG_NAMES)
+    .map(([code, name]) => `<option value="${code}">${name}</option>`).join("");
+  const saved = safeStore2("ymhub_lang") ||
+    (navigator.language ? navigator.language.slice(0,2) : "en");
+  const start = (typeof I18N !== "undefined" && I18N[saved]) ? saved : "en";
+  sel.value = start;
+  sel.onchange = () => applyLanguage(sel.value);
+  applyLanguage(start);
+}
 
 /* ================= STATUS RULES (as specified) =================
    1. Fully Validated : validation === 100
@@ -16,9 +63,12 @@ function statusOf(p){
   if (p.map >= 90 && p.val >= 80) return "almost";
   return "active";
 }
-const STATUS_LABEL = {done:"Fully validated", need:"Needs validation", almost:"Almost completed", active:"Active"};
+// Language-aware labels (functions, not static maps)
+const STATUS_KEY = {done:"st_done", need:"st_need", almost:"st_almost", active:"st_active"};
+const DIFF_KEY = {EASY:"diff_easy", MODERATE:"diff_med", CHALLENGING:"diff_hard"};
+const statusLabel = st => t(STATUS_KEY[st] || "st_active");
+const diffLabel = d => t(DIFF_KEY[d]) || d;
 const STATUS_CLASS = {done:"b-status-done", need:"b-status-need", almost:"b-status-almost", active:"b-status-active"};
-const DIFF_LABEL = {EASY:"Easy", MODERATE:"Medium", CHALLENGING:"Hard"};
 const DIFF_CLASS = {EASY:"b-diff-easy", MODERATE:"b-diff-med", CHALLENGING:"b-diff-hard"};
 
 /* ================= FETCH (multi-instance, CORS-proxy aware) =================
@@ -50,10 +100,25 @@ async function fetchInstance(inst){
   const target = `${inst.api}/projects/?organisationName=${encodeURIComponent(CONFIG.organisationName)}`;
   const data = await fetchJSONWithFallback(target, inst.allowProxy);
   const results = Array.isArray(data.results) ? data.results : [];
-  return results.map(r => ({
-    ...normalize(r),
-    src: inst.key, srcLabel: inst.label, frontend: inst.frontend
-  }));
+
+  // Build a projectId → [lng,lat] lookup from the GeoJSON mapResults, so we
+  // can place each project on the map / heat layer.
+  const geo = {};
+  const feats = data.mapResults?.features;
+  if (Array.isArray(feats)){
+    feats.forEach(f => {
+      const pid = f.properties?.projectId;
+      const c = f.geometry?.coordinates;
+      if (pid != null && Array.isArray(c) && c.length >= 2) geo[pid] = c;
+    });
+  }
+
+  return results.map(r => {
+    const p = normalize(r);
+    const c = geo[p.id];
+    if (c){ p.lng = c[0]; p.lat = c[1]; }
+    return { ...p, src: inst.key, srcLabel: inst.label, frontend: inst.frontend };
+  });
 }
 
 async function fetchAll(){
@@ -77,7 +142,6 @@ async function fetchAll(){
   }
   if (failed.length){
     const reason = settled.find(s => s.status === "rejected")?.reason?.message || "";
-    toast(`${failed.join(" & ")} unreachable — showing the rest. ${reason}`);
     toast(`${failed.join(" & ")} unreachable — showing the rest. ${reason}`);
   }
   return all;
@@ -133,8 +197,10 @@ function applyFilters(){
   };
   list.sort(by[sort] || by.need);
 
+  window.__filtered = list;   // for Export CSV (all filtered)
   renderChips({q,d,c,v,s,src}, list.length);
   renderBoard(list);
+  renderMap(list);
 }
 
 function renderChips(f, n){
@@ -143,11 +209,11 @@ function renderChips(f, n){
     `<span class="chip">${label}: <b>${esc(val)}</b><button aria-label="Remove ${label} filter" data-clear="${clearId}">✕</button></span>`);
   if (f.q) add("Search", f.q, "fSearch");
   if (f.src) add("Source", {hot:"HOT", teachosm:"TeachOSM"}[f.src] || f.src, "fSource");
-  if (f.d) add("Difficulty", DIFF_LABEL[f.d] || f.d, "fDiff");
+  if (f.d) add("Difficulty", diffLabel(f.d), "fDiff");
   if (f.c) add("Country", f.c, "fCountry");
   if (f.v) add("Validation", {lt25:"< 25%","25to75":"25–75%",gt75:"> 75%"}[f.v], "fVal");
-  if (f.s) add("Status", STATUS_LABEL[f.s] || {archived:"Archived", live:"Live only"}[f.s], "fStatus");
-  $("#chips").innerHTML = chips.join("") || `<span style="color:var(--muted);font-size:12.5px">No filters active — showing every tracked project.</span>`;
+  if (f.s) add("Status", statusLabel(f.s) || {archived:t("st_archived"), live:t("st_live")}[f.s], "fStatus");
+  $("#chips").innerHTML = chips.join("") || `<span style="color:var(--muted);font-size:12.5px">${t("no_filters")}</span>`;
   $("#countNote").innerHTML = `<strong>${n}</strong> / ${projects.length} projects`;
   document.querySelectorAll("[data-clear]").forEach(b => b.onclick = () => { $("#"+b.dataset.clear).value = ""; applyFilters(); });
 }
@@ -166,7 +232,7 @@ function tileGridHTML(p){
 function renderBoard(list){
   const board = $("#board");
   if (!list.length){
-    board.innerHTML = `<div class="state" style="grid-column:1/-1"><h3>No projects match these filters</h3><p>Clear a filter chip above to widen the view.</p></div>`;
+    board.innerHTML = `<div class="state" style="grid-column:1/-1"><h3>${t("no_match_h")}</h3><p>${t("no_match_p")}</p></div>`;
     return;
   }
   board.innerHTML = list.map(p => {
@@ -181,33 +247,43 @@ function renderBoard(list){
           <div class="pname"><a href="${url}" target="_blank" rel="noopener">${esc(p.name)}</a></div>
         </div>
         <div class="badges">
-          <span class="badge ${STATUS_CLASS[st]}">${STATUS_LABEL[st]}</span>
-          ${p.archived ? `<span class="badge b-status-active" style="opacity:.75">Archived</span>` : ""}
-          ${p.diff ? `<span class="badge ${DIFF_CLASS[p.diff]||"b-status-active"}">${DIFF_LABEL[p.diff]||p.diff}</span>` : ""}
+          <span class="badge ${STATUS_CLASS[st]}">${statusLabel(st)}</span>
+          ${p.archived ? `<span class="badge b-status-active" style="opacity:.75">${t("st_archived")}</span>` : ""}
+          ${p.diff ? `<span class="badge ${DIFF_CLASS[p.diff]||"b-status-active"}">${diffLabel(p.diff)}</span>` : ""}
           ${(p.priority==="URGENT"||p.priority==="HIGH") ? `<span class="badge b-prio">${p.priority} priority</span>` : ""}
         </div>
       </div>
 
       ${tileGridHTML(p)}
-      <div class="legend"><span class="lv"><i></i>validated</span><span class="lm"><i></i>mapped</span><span class="lu"><i></i>remaining</span></div>
+      <div class="legend"><span class="lv"><i></i>${t("validated")}</span><span class="lm"><i></i>${t("mapped")}</span><span class="lu"><i></i>${t("remaining")}</span></div>
 
-      ${hot ? `<div class="needline">⚑ <span>Validators needed — <b>${p.gap}%</b> of mapped tiles await verification${p.active ? ` · ${p.active} mapper${p.active>1?"s":""} online now` : ""}</span></div>` : ""}
+      ${hot ? `<div class="needline">⚑ <span>${t("needs_line")} — <b>${p.gap}%</b> ${t("tiles_await")}${p.active ? ` · ${p.active} mapper${p.active>1?"s":""}` : ""}</span></div>` : ""}
 
       <div class="meta">
-        ${p.contributors != null ? `<span class="m">👥 ${p.contributors} contributor${p.contributors===1?"":"s"}</span>` : ""}
+        ${p.contributors != null ? `<span class="m">👥 ${p.contributors} ${t("contributors")}</span>` : ""}
       </div>
 
       <div class="stamp">
-        <span class="rel" data-ts="${p.updated ? p.updated.getTime() : ""}">${relTime(p.updated)}</span>
+        <span class="rel" data-ts="${p.updated ? p.updated.getTime() : ""}" title="${p.updated ? "Last modified: " + p.updated.toLocaleString(undefined,{dateStyle:"full",timeStyle:"long"}) : ""}">${relTime(p.updated)}</span>
         <span class="abs">${p.updated ? p.updated.toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}) : "no timestamp"}</span>
       </div>
 
       <div class="card-actions">
-        <a href="${url}" target="_blank" rel="noopener">Open project ↗</a>
-        <a href="${url}/tasks" target="_blank" rel="noopener">Validate tasks ✓</a>
+        <a href="${url}" target="_blank" rel="noopener">${t("open_project")}</a>
+        <a href="${url}/tasks" target="_blank" rel="noopener">${t("validate_tasks")}</a>
+        <button class="card-export" data-export="${p.src}-${p.id}" title="Download this project's details as CSV" aria-label="Export project #${p.id} as CSV">⬇</button>
       </div>
     </article>`;
   }).join("");
+
+  // wire per-card export
+  document.querySelectorAll("[data-export]").forEach(b => {
+    b.onclick = () => {
+      const [src, id] = b.dataset.export.split("-");
+      const proj = projects.find(p => p.src === src && String(p.id) === id);
+      if (proj) exportProjectsCSV([proj], `youthmappers-${src}-project-${id}.csv`);
+    };
+  });
 }
 
 /* ================= TIMESTAMPS ================= */
@@ -234,7 +310,112 @@ setInterval(() => {
     el.textContent = relTime(d);
     el.className = "rel " + freshnessClass(d);
   });
-}, 60000);
+}, 30000);
+
+/* ================= CSV EXPORT ================= */
+function csvCell(v){
+  const s = (v == null ? "" : String(v));
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function exportProjectsCSV(list, filename){
+  const cols = [
+    ["Source", p => p.srcLabel],
+    ["Project ID", p => p.id],
+    ["Name", p => p.name],
+    ["Organisation", p => p.orgName || "YouthMappers"],
+    ["Author", p => p.author || ""],
+    ["Country", p => p.country || ""],
+    ["Latitude", p => p.lat ?? ""],
+    ["Longitude", p => p.lng ?? ""],
+    ["Difficulty", p => diffLabel(p.diff) || ""],
+    ["Priority", p => p.priority || ""],
+    ["Status", p => statusLabel(statusOf(p))],
+    ["Archived", p => p.archived ? "Yes" : "No"],
+    ["% Mapped", p => p.map],
+    ["% Validated", p => p.val],
+    ["Validation gap %", p => p.gap],
+    ["Contributors", p => p.contributors ?? ""],
+    ["Active mappers", p => p.active ?? 0],
+    ["Last updated (ISO)", p => p.updated ? p.updated.toISOString() : ""],
+    ["Last updated (local)", p => p.updated ? p.updated.toLocaleString() : ""],
+    ["Project URL", p => `${p.frontend}/projects/${p.id}`]
+  ];
+  const header = cols.map(c => csvCell(c[0])).join(",");
+  const rows = list.map(p => cols.map(c => csvCell(c[1](p))).join(","));
+  const csv = "\uFEFF" + [header, ...rows].join("\r\n"); // BOM for Excel
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ================= ACTIVITY MAP + HEATMAP ================= */
+let mapObj = null, markerLayer = null, heatLayer = null, mapMode = "markers";
+const STATUS_COLOR = { need:"#f2a83b", almost:"#3aa9ea", done:"#8f7df0", active:"#9fb6d2" };
+
+function initMap(){
+  if (mapObj || typeof L === "undefined") return;
+  mapObj = L.map("map", { worldCopyJump:true, scrollWheelZoom:false }).setView([10, 10], 2);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+  }).addTo(mapObj);
+  markerLayer = L.layerGroup().addTo(mapObj);
+  mapObj.on("click", () => mapObj.scrollWheelZoom.enable());
+}
+
+function renderMap(list){
+  if (typeof L === "undefined") return;
+  initMap();
+  const pts = list.filter(p => typeof p.lat === "number" && typeof p.lng === "number");
+  const note = $("#mapNote");
+
+  // markers
+  markerLayer.clearLayers();
+  const bounds = [];
+  pts.forEach(p => {
+    const st = statusOf(p);
+    const color = STATUS_COLOR[st] || "#9fb6d2";
+    const icon = L.divIcon({ className:"", html:`<div class="ym-marker" style="color:${color}"></div>`, iconSize:[14,14], iconAnchor:[7,7] });
+    const m = L.marker([p.lat, p.lng], { icon });
+    m.bindPopup(
+      `<b>${esc(p.name)}</b><br>${esc(p.srcLabel)} #${p.id}${p.country ? " · " + esc(p.country) : ""}<br>`+
+      `${statusLabel(st)} · ${p.map}% ${t("mapped")} · ${p.val}% ${t("validated")}<br>`+
+      `<a href="${p.frontend}/projects/${p.id}" target="_blank" rel="noopener">${t("open_project")}</a>`
+    );
+    markerLayer.addLayer(m);
+    bounds.push([p.lat, p.lng]);
+  });
+
+  // heat
+  if (heatLayer){ mapObj.removeLayer(heatLayer); heatLayer = null; }
+  const heatData = pts.map(p => {
+    const weight = statusOf(p) === "need" ? 1 : statusOf(p) === "almost" ? 0.7 : 0.4;
+    return [p.lat, p.lng, weight];
+  });
+  if (typeof L.heatLayer === "function"){
+    heatLayer = L.heatLayer(heatData, { radius:28, blur:20, maxZoom:9,
+      gradient:{0.2:"#3ecf8e",0.4:"#3aa9ea",0.7:"#f2a83b",1:"#ef5b4d"} });
+  }
+
+  applyMapMode();
+  if (bounds.length){ try { mapObj.fitBounds(bounds, { padding:[40,40], maxZoom:6 }); } catch(_){} }
+  note.textContent = pts.length
+    ? `${pts.length} of ${list.length} projects have location data · toggle Markers / Heatmap above`
+    : "No location data available for the current filter.";
+}
+
+function applyMapMode(){
+  if (!mapObj) return;
+  if (mapMode === "markers"){
+    if (heatLayer && mapObj.hasLayer(heatLayer)) mapObj.removeLayer(heatLayer);
+    if (markerLayer && !mapObj.hasLayer(markerLayer)) markerLayer.addTo(mapObj);
+  } else {
+    if (markerLayer && mapObj.hasLayer(markerLayer)) mapObj.removeLayer(markerLayer);
+    if (heatLayer && !mapObj.hasLayer(heatLayer)) heatLayer.addTo(mapObj);
+  }
+}
 
 /* ================= STATS + SYNC ================= */
 function renderStats(){
@@ -299,7 +480,8 @@ async function refresh(){
 const TOUR = [
   {sel:'[data-tour="stats"]',   t:"Mission control", p:"A live pulse of every YouthMappers campaign: how many projects are tracked, how many are starving for validators, and how far validation has come overall."},
   {sel:'[data-tour="filters"]', t:"Slice the workload", p:"Filter by difficulty, country, validation completion band, or status. Active filters appear as removable chips with a live result count."},
-  {sel:'[data-tour="board"]',   t:"Project tiles", p:"Each card mirrors a Tasking Manager grid — green tiles are validated, blue are mapped and waiting. Amber-ringed cards need validators most."},
+  {sel:'[data-tour="board"]',   t:"Project tiles", p:"Each card mirrors a Tasking Manager grid — green tiles are validated, blue are mapped and waiting. Amber-ringed cards need validators most. Use the ⬇ button to export any project as CSV."},
+  {sel:'[data-tour="map"]',     t:"Activity map", p:"See where YouthMappers is mapping worldwide. Toggle between Markers (click any point for project details) and Heatmap (hot zones need validators most)."},
   {sel:'[data-tour="sync"]',    t:"Always live", p:"Data streams straight from the HOT and TeachOSM Tasking Manager APIs and refreshes itself every five minutes. Timestamps on every card tick in real time."}
 ];
 let tourIdx = 0, tourEls = null;
@@ -355,6 +537,22 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&l
 $("#refreshBtn").onclick = refresh;
 $("#tourBtn").onclick = startTour;
 
+/* Map mode toggle */
+$("#mtMarkers").onclick = () => {
+  mapMode = "markers"; $("#mtMarkers").classList.add("active"); $("#mtHeat").classList.remove("active"); applyMapMode();
+};
+$("#mtHeat").onclick = () => {
+  mapMode = "heat"; $("#mtHeat").classList.add("active"); $("#mtMarkers").classList.remove("active"); applyMapMode();
+};
+
+/* Export all filtered projects */
+$("#exportAllBtn").onclick = () => {
+  const list = window.__filtered || projects;
+  if (!list.length) return toast("No projects to export.");
+  const stamp = new Date().toISOString().slice(0,10);
+  exportProjectsCSV(list, `youthmappers-validation-hub-${stamp}.csv`);
+};
+
 /* YouthMappers header: mobile burger + tap-to-open dropdowns */
 const burger = $("#ymBurger"), ymNav = $("#ymNav");
 burger.onclick = () => {
@@ -370,6 +568,12 @@ document.addEventListener("click", e => {
     document.querySelectorAll(".nav-item.open").forEach(n => n.classList.remove("open"));
   }
 });
+
+/* version tag in footer */
+(() => { const v = document.getElementById("versionTag"); if (v && CONFIG.version) v.textContent = "v" + CONFIG.version; })();
+
+/* language: build selector and apply saved/browser language */
+initLangSelect();
 
 refresh().then(() => {
   if (!safeStore("ymops_tour_done") && projects.length) setTimeout(startTour, 900);
