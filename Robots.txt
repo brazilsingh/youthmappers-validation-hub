@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://brazilsingh.github.io/youthmappers-validation-hub/sitemap.xml
