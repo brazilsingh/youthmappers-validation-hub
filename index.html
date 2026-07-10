@@ -1,12 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-/* Set theme before paint to avoid a flash of the wrong theme */
-(function(){try{var t=localStorage.getItem("ymhub_theme");if(!t){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
-</script>
 
 <!-- ============ SEO ============ -->
 <title>YouthMappers Validation Hub — Live OpenStreetMap Validation Dashboard</title>
@@ -160,7 +156,6 @@
       <button class="btn" id="refreshBtn" title="Fetch fresh data now" data-i18n="refresh">↻ Refresh</button>
       <button class="btn ghost" id="tourBtn" data-i18n="tour_btn">Take the tour</button>
       <a class="btn ghost" href="#about" style="text-decoration:none" data-i18n="about_btn">About</a>
-      <button class="btn ghost" id="themeBtn" title="Toggle light / dark mode" aria-label="Toggle light or dark mode">🌙</button>
       <select id="langSelect" class="btn ghost" aria-label="Language" style="padding-right:8px"></select>
     </div>
   </header>
