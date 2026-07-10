@@ -7,7 +7,7 @@ campaigns across the **HOT** and **TeachOSM** Tasking Managers. Every visitor's
 browser fetches data directly from the public Tasking Manager REST APIs, so the
 board is always live with no server to run or pay for.
 
-![version](https://img.shields.io/badge/version-1.4.0-blue)
+![version](https://img.shields.io/badge/version-1.4.1-blue)
 ![status](https://img.shields.io/badge/data-live-brightgreen)
 ![host](https://img.shields.io/badge/hosting-GitHub%20Pages-black)
 
