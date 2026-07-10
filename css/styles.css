@@ -22,30 +22,6 @@
   --hover:#14223a;
   --skeleton-mid:#16253e;
 }
-/* ---------- Light theme ---------- */
-[data-theme="light"]{
-  --ink:#f4f7fb;
-  --panel:#ffffff;
-  --panel-2:#f0f4f9;
-  --line:rgba(32,52,76,.12);
-  --line-strong:rgba(32,52,76,.22);
-  --text:#16283d;
-  --muted:#5b7186;
-  --map:#1783c9;
-  --val:#1f9e6a;
-  --need:#c47a10;
-  --urgent:#d63b2c;
-  --done:#6a55c9;
-  --shadow:0 10px 28px rgba(20,40,70,.12);
-  --grid-line:rgba(23,131,201,.05);
-  --glow-a:rgba(23,131,201,.08);
-  --glow-b:rgba(31,158,106,.06);
-  --tile-empty:rgba(32,52,76,.10);
-  --map-filter:none;   /* light map = normal OSM tiles */
-  --input-bg:#eef3f8;
-  --hover:#e4ecf4;
-  --skeleton-mid:#e8eef5;
-}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{
@@ -464,8 +440,6 @@ header.top{
 /* language selector */
 #langSelect{cursor:pointer;font-size:13px;min-width:120px}
 #langSelect option{background:var(--panel);color:var(--text)}
-/* theme toggle */
-#themeBtn{font-size:15px;line-height:1;padding:9px 12px}
 /* right-to-left languages (e.g. Arabic) */
 [dir="rtl"] .meta,[dir="rtl"] .stamp,[dir="rtl"] .card-actions,
 [dir="rtl"] .top-actions,[dir="rtl"] .map-head,[dir="rtl"] .contact-row{direction:rtl}
